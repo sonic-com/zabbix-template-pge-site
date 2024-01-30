@@ -4,6 +4,13 @@
 
 Zabbix Template to monitor PGE power status at a site.
 
+Note: PGE api is undocumented and unsupported, as best I can tell. This is
+worked out from what the website uses.
+
+In other words: likely to break next time PGE updates their outages site.
+
+### Details
+
 PG&E's API returns a big chunk of JSON.
 
 If there's a current outage, then `has_newer_nonsync_outage` is `true`, and
@@ -14,6 +21,16 @@ and `most_recent_outage` will be populated.
 
 If there are no current or recent outages, then those will be `false`, and
 both `current_outage` and `most_recent_outage` will be `{}`.
+
+### Setup
+
+1. Visit https://pgealerts.alerts.pge.com/
+2. Search for the address in question
+3. Use browser tools to view what JSON is fetched.
+4. Look for activity that grabs https://ewapi.cloudapi.pge.com/single-address-outages
+5. Get the `prem_id` from either the URL, or from the returned JSON.
+6. Create a new Host for that address in Zabbix, assign it this template,
+   and set the `{$PGE.POWEROUTAGE.PREMID}` macro to the prem_id
 
 ## Macros used
 
