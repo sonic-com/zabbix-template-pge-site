@@ -1,0 +1,339 @@
+zabbix_export:
+  version: '6.4'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+    - uuid: c1d5e259a4e74b0f8d7c1cad2419826a
+      name: 'Templates/Data Center'
+    - uuid: 3dcd5bbe90534f9e8eb5c2d53756af63
+      name: Templates/Power
+  templates:
+    - uuid: 3f2a0f8fc4f143899a26176f10f6c5f7
+      template: 'PGE Power Outages at Site via HTTP REST API'
+      name: 'PGE Power Outages at Site via HTTP REST API'
+      description: |
+        User-visible information is at https://pgealerts.alerts.pge.com/
+        API is at https://ewapi.cloudapi.pge.com
+        
+        To find a prem_id, "inspect" network activity in firefox while loading outage status, and look at either the prem_id field of the url or the prem_id returned in the JSON body.
+      groups:
+        - name: Templates
+        - name: 'Templates/Data Center'
+        - name: Templates/Power
+      items:
+        - uuid: 0d0ace87bf764bbf98f1e9498925f208
+          name: 'PGE Power Outage Current Cause'
+          type: DEPENDENT
+          key: pge.outage.current_outage.cause
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].current_outage.outage_cause'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: current
+        - uuid: 6cbae661bc76456a8450aaccd215eafe
+          name: 'PGE Power Outage Current Crew Current Status'
+          type: DEPENDENT
+          key: pge.outage.current_outage.crew_current_status
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].current_outage.crew_current_status'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: current
+        - uuid: ebc73d7a254e47c8aef35a7541eaedea
+          name: 'PGE Power Outage Current Estimated Customers'
+          type: DEPENDENT
+          key: pge.outage.current_outage.est_customers
+          delay: '0'
+          history: 14d
+          units: customers
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].current_outage.est_customers'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: current
+        - uuid: eb9aa94e3c6443fca29ff6a7ed21d5b1
+          name: 'PGE Power Outage Current Start'
+          type: DEPENDENT
+          key: pge.outage.current_outage.outage_start
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].current_outage.outage_start'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: current
+        - uuid: cc2355ccb96c4e718a065bba1ecf607b
+          name: 'PGE Power Outage Current Details'
+          type: DEPENDENT
+          key: pge.outage.current_outage.raw
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].current_outage'
+              error_handler: DISCARD_VALUE
+            - type: STR_REPLACE
+              parameters:
+                - '","'
+                - '",\n"'
+            - type: STR_REPLACE
+              parameters:
+                - '{"'
+                - '{\n"'
+            - type: STR_REPLACE
+              parameters:
+                - '"}'
+                - '"\n}'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: current
+          triggers:
+            - uuid: 0e78094abc794521aea277028b30e617
+              expression: 'last(/PGE Power Outages at Site via HTTP REST API/pge.outage.current_outage.raw,#1)<>"{}"'
+              name: 'PGE Power Out Currently Details'
+              opdata: '{ITEM.LASTVALUE1}'
+              priority: HIGH
+              description: |
+                PGE shows an outage for this site currently.
+                
+                Details:
+                {ITEM.LASTVALUE1}
+        - uuid: c5de11970979403e96b9ce8a562aaead
+          name: 'PGE Power Outage Current Boolean'
+          type: DEPENDENT
+          key: pge.outage.has_newer_nonsync_outage
+          delay: '0'
+          history: 30d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].has_newer_nonsync_outage'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: current
+          triggers:
+            - uuid: aba88f3543444a91bd245aef30dccd14
+              expression: 'last(/PGE Power Outages at Site via HTTP REST API/pge.outage.has_newer_nonsync_outage,#1)="true"'
+              name: 'PGE Power Out Currently'
+              priority: HIGH
+              description: 'https://pgealerts.alerts.pge.com/outage-status/ shows an active outage for this site'
+              dependencies:
+                - name: 'PGE Power Out Currently Details'
+                  expression: 'last(/PGE Power Outages at Site via HTTP REST API/pge.outage.current_outage.raw,#1)<>"{}"'
+        - uuid: 3acbdff2cd46497799dddcd70f04f33c
+          name: 'PGE Power Outage Recent Cause'
+          type: DEPENDENT
+          key: pge.outage.most_recent_outage.cause
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].most_recent_outage.outage_cause'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: historical
+        - uuid: e4d4095214b24bf4ae68cb9f974801fe
+          name: 'PGE Power Outage Recent Crew Current Status'
+          type: DEPENDENT
+          key: pge.outage.most_recent_outage.crew_current_status
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].most_recent_outage.crew_current_status'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: historical
+        - uuid: 23ab31ae525242d2b9902792e9fcc724
+          name: 'PGE Power Outage Recent Estimated Customers'
+          type: DEPENDENT
+          key: pge.outage.most_recent_outage.est_customers
+          delay: '0'
+          history: 14d
+          units: customers
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].most_recent_outage.est_customers'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: historical
+        - uuid: e131eb4cc35847fda7c4f585061536e7
+          name: 'PGE Power Outage Recent Start'
+          type: DEPENDENT
+          key: pge.outage.most_recent_outage.outage_start
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].most_recent_outage.outage_start'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: historical
+        - uuid: 265ea9f615294aafafc250da7fc2f19e
+          name: 'PGE Power Outage Recent Details'
+          type: DEPENDENT
+          key: pge.outage.most_recent_outage.raw
+          delay: '0'
+          history: 14d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].most_recent_outage'
+              error_handler: DISCARD_VALUE
+            - type: STR_REPLACE
+              parameters:
+                - '","'
+                - '",\n"'
+            - type: STR_REPLACE
+              parameters:
+                - '{"'
+                - '{\n"'
+            - type: STR_REPLACE
+              parameters:
+                - '"}'
+                - '"\n}'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: historical
+          triggers:
+            - uuid: bb0c534ec00f4687971910ddf0b03204
+              expression: 'last(/PGE Power Outages at Site via HTTP REST API/pge.outage.most_recent_outage.raw,#1)<>"{}"'
+              name: 'PGE Power Out Recently Details'
+              opdata: '{ITEM.LASTVALUE1}'
+              priority: WARNING
+              description: |
+                PGE shows a recent outage for this site currently.
+                
+                Details:
+                {ITEM.LASTVALUE1}
+        - uuid: effbbbc8b2ff416584071d327f63cfa7
+          name: 'PGE Power Outage Power Restored At'
+          type: DEPENDENT
+          key: pge.outage.power_restored_at
+          delay: '0'
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].power_restored_at'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: current
+            - tag: scope
+              value: historical
+        - uuid: 76bac1c2ebd742cdbfadc6fcb76ad90d
+          name: 'PGE Power Restored Recently Boolean'
+          type: DEPENDENT
+          key: pge.outage.power_restored_recently
+          delay: '0'
+          history: 30d
+          trends: '0'
+          value_type: TEXT
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.[0].sp_meter_transformer_details.[0].power_restored_recently'
+          master_item:
+            key: pge.outage.raw
+          tags:
+            - tag: scope
+              value: historical
+          triggers:
+            - uuid: 53a401aa64424a0995ed108f17bb7588
+              expression: 'last(/PGE Power Outages at Site via HTTP REST API/pge.outage.power_restored_recently,#1)="true"'
+              name: 'PGE Power Restored Recently'
+              priority: WARNING
+              description: 'PGE shows a recent outage for this site.'
+              dependencies:
+                - name: 'PGE Power Out Recently Details'
+                  expression: 'last(/PGE Power Outages at Site via HTTP REST API/pge.outage.most_recent_outage.raw,#1)<>"{}"'
+        - uuid: 80927b7cf4414f97a62f8113478ac7f4
+          name: 'PGE Outage Raw JSON'
+          type: HTTP_AGENT
+          key: pge.outage.raw
+          delay: 5m
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+          url: 'https://ewapi.cloudapi.pge.com/single-address-outages'
+          query_fields:
+            - name: prem_id
+              value: '{$PGE.POWEROUTAGE.PREMID}'
+          headers:
+            - name: User-Agent
+              value: zabbix/6.4
+            - name: Accept
+              value: '*/*'
+          tags:
+            - tag: component
+              value: raw
+      tags:
+        - tag: class
+          value: power
+        - tag: scope
+          value: site
+        - tag: target
+          value: pge
+      macros:
+        - macro: '{$PGE.POWEROUTAGE.PREMID}'
+          value: '8386513241'
