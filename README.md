@@ -34,9 +34,11 @@ both `current_outage` and `most_recent_outage` will be `{}`.
 
 ## Macros used
 
-{$PGE.POWEROUTAGE.PREMID} - Get your value by finding your site at
-https://pgealerts.alerts.pge.com/ "inspect" network activity in Firefox, and
-look for a prem_id in the URL or in a JSON body.
+## Macros used
+
+|Name|Description|Default|Type|
+|----|-----------|-------|----|
+|{$PGE.POWEROUTAGE.PREMID}|prem_id from pge outages site|`8386513241`|Text macro|
 
 ## Template links
 
