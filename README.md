@@ -2,7 +2,8 @@
 
 ## Overview
 
-Zabbix Template to monitor PGE power status at a site.
+Zabbix Template to monitor Pacific Gas & Electric power status at a site.
+(california electrical utility)
 
 Note: PGE api is undocumented and unsupported, as best I can tell. This is
 worked out from what the website uses.
